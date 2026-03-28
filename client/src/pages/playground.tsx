@@ -96,6 +96,70 @@ export default function Playground() {
     redo(nodes, edges, setNodes, setEdges);
   }, [nodes, edges, setNodes, setEdges, redo]);
 
+  // Clipboard for copy/paste
+  const clipboard = useRef<{ nodes: Node[]; edges: Edge[] }>({ nodes: [], edges: [] });
+
+  // Copy selected nodes
+  const handleCopy = useCallback(() => {
+    const selectedNodes = nodes.filter((n) => n.selected);
+    if (selectedNodes.length === 0) return;
+    const selectedIds = new Set(selectedNodes.map((n) => n.id));
+    // Include edges that connect selected nodes
+    const selectedEdges = edges.filter(
+      (e) => selectedIds.has(e.source) && selectedIds.has(e.target)
+    );
+    clipboard.current = {
+      nodes: JSON.parse(JSON.stringify(selectedNodes)),
+      edges: JSON.parse(JSON.stringify(selectedEdges)),
+    };
+    toast({ title: "Copied", description: `${selectedNodes.length} node(s) copied.` });
+  }, [nodes, edges, toast]);
+
+  // Paste from clipboard
+  const handlePaste = useCallback(() => {
+    const { nodes: copiedNodes, edges: copiedEdges } = clipboard.current;
+    if (copiedNodes.length === 0) return;
+    takeSnapshot(nodes, edges);
+
+    // Create ID mapping for pasted nodes
+    const idMap = new Map<string, string>();
+    const newNodes: Node[] = copiedNodes.map((n) => {
+      nodeCounter.current += 1;
+      const newId = `${n.id.split("-").slice(0, -1).join("-")}-${nodeCounter.current}`;
+      idMap.set(n.id, newId);
+      return {
+        ...n,
+        id: newId,
+        position: { x: n.position.x + 40, y: n.position.y + 40 },
+        selected: true,
+        // Clear parent — pasted nodes land on canvas root
+        parentId: undefined,
+        extent: undefined,
+      };
+    });
+
+    // Remap edge IDs and source/target
+    const newEdges: Edge[] = copiedEdges.map((e) => {
+      const newSource = idMap.get(e.source) || e.source;
+      const newTarget = idMap.get(e.target) || e.target;
+      return {
+        ...e,
+        id: `${newSource}-${newTarget}`,
+        source: newSource,
+        target: newTarget,
+        selected: false,
+      };
+    });
+
+    // Deselect existing nodes, add pasted ones
+    setNodes((nds) => [
+      ...nds.map((n) => ({ ...n, selected: false })),
+      ...newNodes,
+    ]);
+    setEdges((eds) => [...eds, ...newEdges]);
+    toast({ title: "Pasted", description: `${newNodes.length} node(s) pasted.` });
+  }, [nodes, edges, setNodes, setEdges, takeSnapshot, toast]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -112,6 +176,24 @@ export default function Playground() {
         handleRedo();
         return;
       }
+      // Ctrl+C — copy
+      if (isCtrl && e.key === "c") {
+        // Only intercept if nodes are selected (don't break text selection)
+        const selectedNodes = nodes.filter((n) => n.selected);
+        if (selectedNodes.length > 0 && !window.getSelection()?.toString()) {
+          e.preventDefault();
+          handleCopy();
+          return;
+        }
+      }
+      // Ctrl+V — paste
+      if (isCtrl && e.key === "v") {
+        if (clipboard.current.nodes.length > 0 && !document.querySelector("input:focus, textarea:focus")) {
+          e.preventDefault();
+          handlePaste();
+          return;
+        }
+      }
       // Ctrl+S — save
       if (isCtrl && e.key === "s") {
         e.preventDefault();
@@ -127,7 +209,7 @@ export default function Playground() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleUndo, handleRedo, nodes.length]);
+  }, [handleUndo, handleRedo, handleCopy, handlePaste, nodes.length, nodes]);
 
   // Handle drag from palette
   const handleDragStart = useCallback(

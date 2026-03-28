@@ -20,11 +20,11 @@ Solutions Architects studying for certs. Accurate enough to deploy from.
 - [ ] Services auto-parent when dropped inside a boundary
 - [ ] Connection handles on all 4 sides of every node
 - [ ] Animated directional edges with arrow markers
-- [ ] Edge labels showing relationship type (e.g. "HTTPS", "IAM Role", "VPC Peering")
+- [x] Edge labels showing relationship type (e.g. "HTTPS", "IAM Role", "VPC Peering")
 - [ ] MiniMap showing full architecture overview
 - [ ] Grid snapping for clean alignment
-- [ ] Undo/redo with full state history
-- [ ] Keyboard shortcuts: Ctrl+Z undo, Ctrl+Shift+Z redo, Delete remove, Ctrl+S save, Ctrl+E export
+- [x] Undo/redo with full state history
+- [x] Keyboard shortcuts: Ctrl+Z undo, Ctrl+Shift+Z redo, Delete remove, Ctrl+S save, Ctrl+E export
 - [ ] Select multiple nodes (shift+click or drag select)
 - [ ] Copy/paste nodes and groups
 - [ ] Dark and light theme with system preference detection
@@ -59,9 +59,9 @@ Solutions Architects studying for certs. Accurate enough to deploy from.
 - [ ] Auto-save indicator (unsaved changes warning)
 
 ### 5. UX & Polish
-- [ ] Toast notifications for all user actions (save, load, export, delete, errors)
+- [x] Toast notifications for all user actions (save, load, export, delete, errors)
 - [ ] Loading states for all async operations
-- [ ] Error boundaries that don't crash the whole app
+- [x] Error boundaries that don't crash the whole app
 - [ ] Empty states with clear calls to action
 - [ ] Responsive toolbar that doesn't overflow
 - [ ] Professional typography and spacing
@@ -70,13 +70,13 @@ Solutions Architects studying for certs. Accurate enough to deploy from.
 - [ ] Accessibility: keyboard navigation, ARIA labels, focus management
 
 ### 6. Code Quality
-- [ ] Zero TypeScript errors (strict mode)
-- [ ] No `any` types in application code (UI library types excluded)
+- [x] Zero TypeScript errors (strict mode)
+- [x] No `any` types in application code (UI library types excluded)
 - [ ] Proper error handling on all API calls
-- [ ] No dead code or unused imports
+- [x] No dead code or unused imports
 - [ ] Consistent file naming and code style
 - [ ] Components under 300 lines (split if larger)
-- [ ] Clean git history with descriptive commit messages
+- [x] Clean git history with descriptive commit messages
 
 ### 7. Performance
 - [ ] Initial load under 3 seconds

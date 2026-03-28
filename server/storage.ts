@@ -12,7 +12,7 @@ export interface IStorage {
   getArchitectures(): Promise<Architecture[]>;
   getArchitecture(id: number): Promise<Architecture | undefined>;
   createArchitecture(arch: InsertArchitecture): Promise<Architecture>;
-  updateArchitecture(id: number, arch: InsertArchitecture): Promise<Architecture | undefined>;
+  updateArchitecture(id: number, arch: Partial<InsertArchitecture>): Promise<Architecture | undefined>;
   deleteArchitecture(id: number): Promise<void>;
 }
 
@@ -26,7 +26,7 @@ export class DatabaseStorage implements IStorage {
   async createArchitecture(arch: InsertArchitecture): Promise<Architecture> {
     return db.insert(architectures).values(arch).returning().get();
   }
-  async updateArchitecture(id: number, arch: InsertArchitecture): Promise<Architecture | undefined> {
+  async updateArchitecture(id: number, arch: Partial<InsertArchitecture>): Promise<Architecture | undefined> {
     return db.update(architectures).set(arch).where(eq(architectures.id, id)).returning().get();
   }
   async deleteArchitecture(id: number): Promise<void> {

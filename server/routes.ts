@@ -3,8 +3,38 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { Anthropic } from "@anthropic-ai/sdk";
 import { getConnectionDocumentation, getExportDocumentation } from "./aws-docs";
+import { insertArchitectureSchema } from "../shared/schema";
+import { z } from "zod";
 
 const anthropic = new Anthropic();
+
+// Input validation schemas for API endpoints
+const connectionPromptSchema = z.object({
+  sourceService: z.string().min(1).max(200),
+  targetService: z.string().min(1).max(200),
+  sourceCategory: z.string().max(100).optional(),
+  targetCategory: z.string().max(100).optional(),
+  sourceCfnType: z.string().max(200).optional(),
+  targetCfnType: z.string().max(200).optional(),
+});
+
+const exportSchema = z.object({
+  nodes: z.array(z.object({
+    id: z.string(),
+    service: z.string().optional(),
+    serviceId: z.string().optional(),
+    cfnType: z.string().optional(),
+    notes: z.string().optional().nullable(),
+  })).max(200),
+  edges: z.array(z.object({
+    from: z.string(),
+    to: z.string(),
+    fromService: z.string().optional(),
+    toService: z.string().optional(),
+  })).max(500),
+  connectionConfigs: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
+  format: z.enum(["json", "yaml"]),
+});
 
 export async function registerRoutes(
   httpServer: Server,
@@ -14,7 +44,11 @@ export async function registerRoutes(
   // AI-powered connection prompts — grounded in AWS documentation
   app.post("/api/connection-prompts", async (req, res) => {
     try {
-      const { sourceService, targetService, sourceCategory, targetCategory, sourceCfnType, targetCfnType } = req.body;
+      const parsed = connectionPromptSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request body", details: parsed.error.issues.map(i => i.message) });
+      }
+      const { sourceService, targetService, sourceCategory, targetCategory, sourceCfnType, targetCfnType } = parsed.data;
       
       // Fetch relevant AWS documentation BEFORE calling Claude
       console.log(`[aws-docs] Fetching documentation for ${sourceService} → ${targetService}...`);
@@ -103,7 +137,11 @@ Respond ONLY with valid JSON, no markdown code blocks or extra text.`
   // CloudFormation export — grounded in AWS documentation
   app.post("/api/export-cloudformation", async (req, res) => {
     try {
-      const { nodes, edges, connectionConfigs, format } = req.body;
+      const parsed = exportSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request body", details: parsed.error.issues.map(i => i.message) });
+      }
+      const { nodes, edges, connectionConfigs, format } = parsed.data;
       
       // Extract service info from nodes for documentation lookup
       const services = (nodes || []).map((n: any) => ({
@@ -185,18 +223,30 @@ Respond ONLY with the raw ${format === 'yaml' ? 'YAML' : 'JSON'} template conten
   });
 
   app.post("/api/architectures", async (req, res) => {
-    const arch = await storage.createArchitecture(req.body);
+    const parsed = insertArchitectureSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Invalid architecture data", details: parsed.error.issues.map(i => i.message) });
+    }
+    const arch = await storage.createArchitecture(parsed.data);
     res.json(arch);
   });
 
   app.put("/api/architectures/:id", async (req, res) => {
-    const arch = await storage.updateArchitecture(Number(req.params.id), req.body);
+    const id = Number(req.params.id);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: "Invalid id" });
+    const parsed = insertArchitectureSchema.partial().safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Invalid architecture data", details: parsed.error.issues.map(i => i.message) });
+    }
+    const arch = await storage.updateArchitecture(id, parsed.data);
     if (!arch) return res.status(404).json({ error: "Not found" });
     res.json(arch);
   });
 
   app.delete("/api/architectures/:id", async (req, res) => {
-    await storage.deleteArchitecture(Number(req.params.id));
+    const id = Number(req.params.id);
+    if (isNaN(id) || id <= 0) return res.status(400).json({ error: "Invalid id" });
+    await storage.deleteArchitecture(id);
     res.json({ ok: true });
   });
 
