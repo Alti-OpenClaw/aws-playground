@@ -26,6 +26,9 @@ function AwsNodeComponent({ id, data, selected }: NodeProps & { data: AwsNodeDat
       }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      role="button"
+      aria-label={`${service.shortName} — ${service.name}${notes ? '. Has note: ' + notes : ''}`}
+      tabIndex={0}
       data-testid={`node-${service.id}`}
     >
       {/* Connection handles */}
