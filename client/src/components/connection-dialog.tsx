@@ -51,6 +51,7 @@ interface ConnectionPromptData {
   notes: ConnectionNote[];
   iamPolicy?: string;
   cloudformationHint?: string;
+  sources?: string[];
 }
 
 interface ConnectionDialogProps {
@@ -87,6 +88,8 @@ export function ConnectionDialog({
         targetService: target.name,
         sourceCategory: source.category,
         targetCategory: target.category,
+        sourceCfnType: source.cfnType,
+        targetCfnType: target.cfnType,
       })
         .then((res) => res.json())
         .then((data: ConnectionPromptData) => {
@@ -331,6 +334,32 @@ export function ConnectionDialog({
                     ? promptData.iamPolicy
                     : JSON.stringify(promptData.iamPolicy, null, 2)}
                 </pre>
+              </div>
+            )}
+
+            {/* AWS Documentation Sources */}
+            {promptData?.sources && promptData.sources.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Info className="w-3.5 h-3.5 text-emerald-500" />
+                  <h3 className="text-xs font-semibold text-foreground">
+                    Grounded in AWS Documentation
+                  </h3>
+                </div>
+                <div className="space-y-1">
+                  {promptData.sources.map((url, i) => (
+                    <a
+                      key={i}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-[10px] text-blue-500 hover:text-blue-400 hover:underline truncate"
+                      title={url}
+                    >
+                      {url.replace("https://docs.aws.amazon.com/", "📄 ")}
+                    </a>
+                  ))}
+                </div>
               </div>
             )}
           </div>
