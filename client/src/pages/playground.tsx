@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import {
   ReactFlow,
   Background,
@@ -48,11 +48,13 @@ import { SaveLoadDialog } from "@/components/save-load-dialog";
 import { type AwsService, getServiceById } from "@/data/aws-services";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useUndoRedo } from "@/hooks/use-undo-redo";
 
 const nodeTypes = { awsService: AwsNode, group: GroupNode };
 
 export default function Playground() {
   const { toast } = useToast();
+  const { takeSnapshot, undo, redo, canUndo, canRedo } = useUndoRedo();
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [connectionConfigs, setConnectionConfigs] = useState<
@@ -91,6 +93,48 @@ export default function Playground() {
   useState(() => {
     document.documentElement.classList.toggle("dark", isDark);
   });
+
+  // Undo/redo handlers
+  const handleUndo = useCallback(() => {
+    undo(nodes, edges, setNodes, setEdges);
+  }, [nodes, edges, setNodes, setEdges, undo]);
+
+  const handleRedo = useCallback(() => {
+    redo(nodes, edges, setNodes, setEdges);
+  }, [nodes, edges, setNodes, setEdges, redo]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const isCtrl = e.ctrlKey || e.metaKey;
+
+      // Ctrl+Z — undo, Ctrl+Shift+Z — redo
+      if (isCtrl && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+      if (isCtrl && e.key === "z" && e.shiftKey) {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
+      // Ctrl+S — save
+      if (isCtrl && e.key === "s") {
+        e.preventDefault();
+        if (nodes.length > 0) setShowSaveDialog(true);
+        return;
+      }
+      // Ctrl+E — export
+      if (isCtrl && e.key === "e") {
+        e.preventDefault();
+        if (nodes.length > 0) setShowExportDialog(true);
+        return;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleUndo, handleRedo, nodes.length]);
 
   // Handle drag from palette
   const handleDragStart = useCallback(
@@ -137,6 +181,7 @@ export default function Playground() {
   const handleDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
+      takeSnapshot(nodes, edges);
 
       const reactFlowBounds = (
         event.currentTarget as HTMLElement
@@ -202,7 +247,7 @@ export default function Playground() {
 
       setNodes((nds) => [...nds, newNode]);
     },
-    [setNodes, findParentGroup]
+    [setNodes, findParentGroup, takeSnapshot, nodes, edges]
   );
 
   // Handle connection attempt
@@ -224,6 +269,7 @@ export default function Playground() {
   const handleConfirmConnection = useCallback(
     (config: Record<string, any>) => {
       if (!pendingConnection) return;
+      takeSnapshot(nodes, edges);
 
       const edgeId = `${pendingConnection.source}-${pendingConnection.target}`;
       const newEdge: Edge = {
@@ -249,7 +295,7 @@ export default function Playground() {
       setPendingConnection(null);
       toast({ title: "Connection created", description: "Services linked successfully." });
     },
-    [pendingConnection, setEdges, toast]
+    [pendingConnection, setEdges, toast, takeSnapshot, nodes, edges]
   );
 
   // Cancel connection
@@ -261,6 +307,7 @@ export default function Playground() {
   // Delete node (and children if it's a group)
   const handleDeleteNode = useCallback(
     (nodeId: string) => {
+      takeSnapshot(nodes, edges);
       setNodes((nds) => {
         // Collect all descendant IDs (recursive for nested groups)
         const toDelete = new Set<string>([nodeId]);
@@ -283,7 +330,7 @@ export default function Playground() {
         })
       );
     },
-    [setNodes, setEdges]
+    [setNodes, setEdges, takeSnapshot, nodes, edges]
   );
 
   // Note dialog
@@ -516,6 +563,42 @@ export default function Playground() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Toggle theme</TooltipContent>
+              </Tooltip>
+
+              <div className="w-px h-5 bg-border mx-0.5" />
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleUndo}
+                    className="h-7 w-7 p-0"
+                    disabled={!canUndo()}
+                    data-testid="btn-undo"
+                    aria-label="Undo"
+                  >
+                    <Undo2 className="w-3.5 h-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRedo}
+                    className="h-7 w-7 p-0"
+                    disabled={!canRedo()}
+                    data-testid="btn-redo"
+                    aria-label="Redo"
+                  >
+                    <Redo2 className="w-3.5 h-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Redo (Ctrl+Shift+Z)</TooltipContent>
               </Tooltip>
 
               <Tooltip>
