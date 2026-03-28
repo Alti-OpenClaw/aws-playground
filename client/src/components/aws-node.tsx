@@ -7,7 +7,7 @@ import type { AwsService } from "@/data/aws-services";
 export interface AwsNodeData {
   service: AwsService;
   notes?: string;
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
   onDelete?: (id: string) => void;
   onAddNote?: (id: string) => void;
   [key: string]: unknown;

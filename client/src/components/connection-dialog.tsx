@@ -59,7 +59,7 @@ interface ConnectionDialogProps {
   onOpenChange: (open: boolean) => void;
   source: AwsService | null;
   target: AwsService | null;
-  onConfirm: (config: Record<string, any>) => void;
+  onConfirm: (config: Record<string, unknown>) => void;
   onCancel: () => void;
 }
 
@@ -73,7 +73,7 @@ export function ConnectionDialog({
 }: ConnectionDialogProps) {
   const [loading, setLoading] = useState(false);
   const [promptData, setPromptData] = useState<ConnectionPromptData | null>(null);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -95,7 +95,7 @@ export function ConnectionDialog({
         .then((data: ConnectionPromptData) => {
           setPromptData(data);
           // Set defaults
-          const defaults: Record<string, any> = {};
+          const defaults: Record<string, unknown> = {};
           data.questions?.forEach((q) => {
             if (q.default !== undefined) defaults[q.id] = q.default;
           });
@@ -237,7 +237,7 @@ export function ConnectionDialog({
 
                     {q.type === "text" && (
                       <Input
-                        value={answers[q.id] || ""}
+                        value={(answers[q.id] as string) || ""}
                         onChange={(e) =>
                           setAnswers((prev) => ({
                             ...prev,
@@ -252,7 +252,7 @@ export function ConnectionDialog({
 
                     {q.type === "select" && q.options && (
                       <Select
-                        value={answers[q.id] || q.default || ""}
+                        value={(answers[q.id] as string) || q.default || ""}
                         onValueChange={(val) =>
                           setAnswers((prev) => ({ ...prev, [q.id]: val }))
                         }
@@ -291,17 +291,17 @@ export function ConnectionDialog({
                     {q.type === "multiselect" && q.options && (
                       <div className="flex flex-wrap gap-1.5">
                         {q.options.map((opt) => {
-                          const selected = (answers[q.id] || []).includes(opt);
+                          const currentArr = Array.isArray(answers[q.id]) ? (answers[q.id] as string[]) : [];
+                          const selected = currentArr.includes(opt);
                           return (
                             <Badge
                               key={opt}
                               variant={selected ? "default" : "outline"}
                               className="cursor-pointer text-[10px] h-6"
                               onClick={() => {
-                                const current = answers[q.id] || [];
                                 const next = selected
-                                  ? current.filter((v: string) => v !== opt)
-                                  : [...current, opt];
+                                  ? currentArr.filter((v) => v !== opt)
+                                  : [...currentArr, opt];
                                 setAnswers((prev) => ({
                                   ...prev,
                                   [q.id]: next,

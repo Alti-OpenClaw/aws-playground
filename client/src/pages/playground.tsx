@@ -7,6 +7,7 @@ import {
   addEdge,
   useNodesState,
   useEdgesState,
+  SelectionMode,
   type Connection,
   type Node,
   type Edge,
@@ -41,7 +42,7 @@ export default function Playground() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [connectionConfigs, setConnectionConfigs] = useState<
-    Record<string, Record<string, any>>
+    Record<string, Record<string, unknown>>
   >({});
 
   // Dialog state
@@ -342,7 +343,7 @@ export default function Playground() {
 
   // Confirm connection with config
   const handleConfirmConnection = useCallback(
-    (config: Record<string, any>) => {
+    (config: Record<string, unknown>) => {
       if (!pendingConnection) return;
       takeSnapshot(nodes, edges);
 
@@ -566,6 +567,8 @@ export default function Playground() {
       {/* Main Canvas */}
       <div
         className="flex-1 relative"
+        role="application"
+        aria-label="AWS architecture canvas — drag services here to build your diagram"
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
@@ -588,6 +591,10 @@ export default function Playground() {
           snapGrid={[16, 16]}
           minZoom={0.2}
           maxZoom={2}
+          selectionOnDrag
+          selectionMode={SelectionMode.Partial}
+          multiSelectionKeyCode="Shift"
+          selectionKeyCode={null}
           deleteKeyCode={["Backspace", "Delete"]}
           defaultEdgeOptions={{
             animated: true,

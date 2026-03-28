@@ -13,61 +13,61 @@ Solutions Architects studying for certs. Accurate enough to deploy from.
 ## End State Requirements
 
 ### 1. Canvas & Diagramming
-- [ ] Drag-and-drop 90+ AWS services from categorized sidebar
-- [ ] Search/filter services by name, category, or description
-- [ ] Visual boundary grouping: Region → VPC → Subnet → AZ → Security Group
-- [ ] Boundaries are resizable, nestable, and visually distinct
-- [ ] Services auto-parent when dropped inside a boundary
-- [ ] Connection handles on all 4 sides of every node
-- [ ] Animated directional edges with arrow markers
+- [x] Drag-and-drop 90+ AWS services from categorized sidebar
+- [x] Search/filter services by name, category, or description
+- [x] Visual boundary grouping: Region → VPC → Subnet → AZ → Security Group
+- [x] Boundaries are resizable, nestable, and visually distinct
+- [x] Services auto-parent when dropped inside a boundary
+- [x] Connection handles on all 4 sides of every node
+- [x] Animated directional edges with arrow markers
 - [x] Edge labels showing relationship type (e.g. "HTTPS", "IAM Role", "VPC Peering")
-- [ ] MiniMap showing full architecture overview
-- [ ] Grid snapping for clean alignment
+- [x] MiniMap showing full architecture overview
+- [x] Grid snapping for clean alignment
 - [x] Undo/redo with full state history
 - [x] Keyboard shortcuts: Ctrl+Z undo, Ctrl+Shift+Z redo, Delete remove, Ctrl+S save, Ctrl+E export
-- [ ] Select multiple nodes (shift+click or drag select)
-- [ ] Copy/paste nodes and groups
-- [ ] Dark and light theme with system preference detection
+- [x] Select multiple nodes (shift+click or drag select)
+- [x] Copy/paste nodes and groups
+- [x] Dark and light theme with system preference detection
 
 ### 2. AI-Powered Analysis (Grounded in AWS Docs)
-- [ ] Connection prompts: when linking services, AI generates config questions, IAM policies, and architecture notes
-- [ ] All AI responses cite official AWS documentation URLs
-- [ ] Documentation sources displayed in the UI with clickable links
-- [ ] IAM policies use exact documented actions (not hallucinated)
-- [ ] CloudFormation hints reference real CFN resource types and properties
-- [ ] Connection config answers persist and feed into export
+- [x] Connection prompts: when linking services, AI generates config questions, IAM policies, and architecture notes
+- [x] All AI responses cite official AWS documentation URLs
+- [x] Documentation sources displayed in the UI with clickable links
+- [x] IAM policies use exact documented actions (not hallucinated)
+- [x] CloudFormation hints reference real CFN resource types and properties
+- [x] Connection config answers persist and feed into export
 
 ### 3. Infrastructure-as-Code Export
-- [ ] CloudFormation export in YAML and JSON
-- [ ] Templates use correct CFN resource types and property names from docs
-- [ ] Proper IAM roles/policies for every connection
-- [ ] VPC/subnet/security group configuration when boundaries are used
-- [ ] Sensible default parameters for configurable values
-- [ ] DependsOn relationships where needed
-- [ ] Outputs for important ARNs and endpoints
-- [ ] Metadata section listing documentation sources
+- [x] CloudFormation export in YAML and JSON
+- [x] Templates use correct CFN resource types and property names from docs
+- [x] Proper IAM roles/policies for every connection
+- [x] VPC/subnet/security group configuration when boundaries are used
+- [x] Sensible default parameters for configurable values
+- [x] DependsOn relationships where needed
+- [x] Outputs for important ARNs and endpoints
+- [x] Metadata section listing documentation sources
 - [ ] Template validates against cfn-lint (no structural errors)
-- [ ] Copy to clipboard and download file options
+- [x] Copy to clipboard and download file options
 
 ### 4. Persistence
-- [ ] Save architecture with name and description
-- [ ] Load from list of saved architectures
-- [ ] Overwrite existing saves
-- [ ] Delete saved architectures
-- [ ] All state persists: nodes, edges, connection configs, boundary hierarchy
-- [ ] Timestamps (created/updated) shown in load dialog
-- [ ] Auto-save indicator (unsaved changes warning)
+- [x] Save architecture with name and description
+- [x] Load from list of saved architectures
+- [x] Overwrite existing saves
+- [x] Delete saved architectures
+- [x] All state persists: nodes, edges, connection configs, boundary hierarchy
+- [x] Timestamps (created/updated) shown in load dialog
+- [x] Auto-save indicator (unsaved changes warning)
 
 ### 5. UX & Polish
 - [x] Toast notifications for all user actions (save, load, export, delete, errors)
-- [ ] Loading states for all async operations
+- [x] Loading states for all async operations
 - [x] Error boundaries that don't crash the whole app
-- [ ] Empty states with clear calls to action
-- [ ] Responsive toolbar that doesn't overflow
-- [ ] Professional typography and spacing
-- [ ] Smooth animations and transitions
-- [ ] No console errors in production build
-- [ ] Accessibility: keyboard navigation, ARIA labels, focus management
+- [x] Empty states with clear calls to action
+- [x] Responsive toolbar that doesn't overflow
+- [x] Professional typography and spacing
+- [x] Smooth animations and transitions
+- [x] No console errors in production build
+- [x] Accessibility: keyboard navigation, ARIA labels, focus management
 
 ### 6. Code Quality
 - [x] Zero TypeScript errors (strict mode)

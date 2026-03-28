@@ -83,7 +83,7 @@ async function searchDocs(query: string, limit = 5): Promise<DocSearchResult[]> 
     const data = await resp.json();
     const items = data?.items?.slice(0, limit) || [];
 
-    return items.map((item: any) => ({
+    return items.map((item: Record<string, string>) => ({
       url: item.headURL || item.url || "",
       title: item.title || "",
       context: item.excerpt || item.context || "",

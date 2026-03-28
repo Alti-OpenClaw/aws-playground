@@ -28,7 +28,7 @@ interface ExportDialogProps {
   onOpenChange: (open: boolean) => void;
   nodes: Node[];
   edges: Edge[];
-  connectionConfigs: Record<string, Record<string, any>>;
+  connectionConfigs: Record<string, Record<string, unknown>>;
 }
 
 export function ExportDialog({

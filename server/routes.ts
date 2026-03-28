@@ -128,7 +128,7 @@ Respond ONLY with valid JSON, no markdown code blocks or extra text.`
           });
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("AI prompt error:", error);
       res.status(500).json({ error: "Failed to generate connection prompts" });
     }
@@ -144,10 +144,10 @@ Respond ONLY with valid JSON, no markdown code blocks or extra text.`
       const { nodes, edges, connectionConfigs, format } = parsed.data;
       
       // Extract service info from nodes for documentation lookup
-      const services = (nodes || []).map((n: any) => ({
-        name: n.data?.label || n.data?.service?.name || "",
-        cfnType: n.data?.service?.cfnType || n.data?.cfnType || "",
-      })).filter((s: any) => s.name);
+      const services = nodes.map((n) => ({
+        name: n.service || n.serviceId || "",
+        cfnType: n.cfnType || "",
+      })).filter((s) => s.name);
 
       // Fetch CloudFormation documentation for all services in the diagram
       console.log(`[aws-docs] Fetching CFN documentation for ${services.length} services...`);
@@ -204,7 +204,7 @@ Respond ONLY with the raw ${format === 'yaml' ? 'YAML' : 'JSON'} template conten
       if (content.type === "text") {
         res.json({ template: content.text, format, sources: docs.sources });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Export error:", error);
       res.status(500).json({ error: "Failed to generate CloudFormation template" });
     }
