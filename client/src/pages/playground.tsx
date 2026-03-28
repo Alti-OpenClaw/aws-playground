@@ -47,10 +47,12 @@ import { NoteDialog } from "@/components/note-dialog";
 import { SaveLoadDialog } from "@/components/save-load-dialog";
 import { type AwsService, getServiceById } from "@/data/aws-services";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 const nodeTypes = { awsService: AwsNode, group: GroupNode };
 
 export default function Playground() {
+  const { toast } = useToast();
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [connectionConfigs, setConnectionConfigs] = useState<
@@ -245,8 +247,9 @@ export default function Playground() {
       setConnectionConfigs((prev) => ({ ...prev, [edgeId]: config }));
       setShowConnectionDialog(false);
       setPendingConnection(null);
+      toast({ title: "Connection created", description: "Services linked successfully." });
     },
-    [pendingConnection, setEdges]
+    [pendingConnection, setEdges, toast]
   );
 
   // Cancel connection
@@ -329,17 +332,16 @@ export default function Playground() {
       };
 
       if (currentArchId) {
-        // Update existing
         await apiRequest("PUT", `/api/architectures/${currentArchId}`, body);
       } else {
-        // Create new
         const res = await apiRequest("POST", "/api/architectures", body);
         const created = await res.json();
         setCurrentArchId(created.id);
       }
       setCurrentArchName(name);
+      toast({ title: "Architecture saved", description: `"${name}" saved successfully.` });
     },
-    [nodes, edges, connectionConfigs, currentArchId]
+    [nodes, edges, connectionConfigs, currentArchId, toast]
   );
 
   // Load architecture
@@ -366,11 +368,13 @@ export default function Playground() {
         setConnectionConfigs(loadedConfigs);
         setCurrentArchId(arch.id);
         setCurrentArchName(arch.name);
+        toast({ title: "Architecture loaded", description: `"${arch.name}" loaded successfully.` });
       } catch (err) {
         console.error("Failed to load architecture:", err);
+        toast({ title: "Load failed", description: "Could not load architecture.", variant: "destructive" });
       }
     },
-    [setNodes, setEdges]
+    [setNodes, setEdges, toast]
   );
 
   // Clear canvas
@@ -380,7 +384,8 @@ export default function Playground() {
     setConnectionConfigs({});
     setCurrentArchId(null);
     setCurrentArchName("");
-  }, [setNodes, setEdges]);
+    toast({ title: "Canvas cleared", description: "All services and connections removed." });
+  }, [setNodes, setEdges, toast]);
 
   // Get source and target services for connection dialog
   const sourceService = useMemo(() => {
