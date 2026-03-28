@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect, lazy, Suspense } from "react";
 import {
   ReactFlow,
   Background,
@@ -24,10 +24,10 @@ import { CanvasToolbar } from "@/components/canvas-toolbar";
 import { AwsNode, type AwsNodeData } from "@/components/aws-node";
 import { GroupNode, type GroupNodeData } from "@/components/group-node";
 import { ServicePalette, type BoundaryType } from "@/components/service-palette";
-import { ConnectionDialog } from "@/components/connection-dialog";
-import { ExportDialog } from "@/components/export-dialog";
-import { NoteDialog } from "@/components/note-dialog";
-import { SaveLoadDialog } from "@/components/save-load-dialog";
+const ConnectionDialog = lazy(() => import("@/components/connection-dialog").then(m => ({ default: m.ConnectionDialog })));
+const ExportDialog = lazy(() => import("@/components/export-dialog").then(m => ({ default: m.ExportDialog })));
+const NoteDialog = lazy(() => import("@/components/note-dialog").then(m => ({ default: m.NoteDialog })));
+const SaveLoadDialog = lazy(() => import("@/components/save-load-dialog").then(m => ({ default: m.SaveLoadDialog })));
 import { type AwsService } from "@/data/aws-services";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -582,57 +582,65 @@ export default function Playground() {
         </ReactFlow>
       </div>
 
-      {/* Connection Dialog */}
-      <ConnectionDialog
-        open={showConnectionDialog}
-        onOpenChange={setShowConnectionDialog}
-        source={sourceService}
-        target={targetService}
-        onConfirm={handleConfirmConnection}
-        onCancel={handleCancelConnection}
-      />
+      {/* Lazy-loaded dialogs */}
+      <Suspense fallback={null}>
+        {showConnectionDialog && (
+          <ConnectionDialog
+            open={showConnectionDialog}
+            onOpenChange={setShowConnectionDialog}
+            source={sourceService}
+            target={targetService}
+            onConfirm={handleConfirmConnection}
+            onCancel={handleCancelConnection}
+          />
+        )}
 
-      {/* Export Dialog */}
-      <ExportDialog
-        open={showExportDialog}
-        onOpenChange={setShowExportDialog}
-        nodes={nodes}
-        edges={edges}
-        connectionConfigs={connectionConfigs}
-      />
+        {showExportDialog && (
+          <ExportDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
+            nodes={nodes}
+            edges={edges}
+            connectionConfigs={connectionConfigs}
+          />
+        )}
 
-      {/* Note Dialog */}
-      <NoteDialog
-        open={showNoteDialog}
-        onOpenChange={setShowNoteDialog}
-        nodeId={noteNodeId}
-        serviceName={
-          noteNode ? (noteNode.data as unknown as AwsNodeData).service.shortName : ""
-        }
-        currentNote={
-          noteNode ? ((noteNode.data as unknown as AwsNodeData).notes || "") : ""
-        }
-        onSave={handleSaveNote}
-      />
+        {showNoteDialog && (
+          <NoteDialog
+            open={showNoteDialog}
+            onOpenChange={setShowNoteDialog}
+            nodeId={noteNodeId}
+            serviceName={
+              noteNode ? (noteNode.data as unknown as AwsNodeData).service.shortName : ""
+            }
+            currentNote={
+              noteNode ? ((noteNode.data as unknown as AwsNodeData).notes || "") : ""
+            }
+            onSave={handleSaveNote}
+          />
+        )}
 
-      {/* Save Dialog */}
-      <SaveLoadDialog
-        open={showSaveDialog}
-        onOpenChange={setShowSaveDialog}
-        mode="save"
-        currentName={currentArchName}
-        onSave={handleSave}
-        onLoad={handleLoad}
-      />
+        {showSaveDialog && (
+          <SaveLoadDialog
+            open={showSaveDialog}
+            onOpenChange={setShowSaveDialog}
+            mode="save"
+            currentName={currentArchName}
+            onSave={handleSave}
+            onLoad={handleLoad}
+          />
+        )}
 
-      {/* Load Dialog */}
-      <SaveLoadDialog
-        open={showLoadDialog}
-        onOpenChange={setShowLoadDialog}
-        mode="load"
-        onSave={handleSave}
-        onLoad={handleLoad}
-      />
+        {showLoadDialog && (
+          <SaveLoadDialog
+            open={showLoadDialog}
+            onOpenChange={setShowLoadDialog}
+            mode="load"
+            onSave={handleSave}
+            onLoad={handleLoad}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

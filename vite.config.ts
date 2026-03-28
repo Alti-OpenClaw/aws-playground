@@ -16,6 +16,15 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "react-vendor": ["react", "react-dom"],
+          "xyflow": ["@xyflow/react", "@xyflow/system"],
+          "ui": ["@radix-ui/react-dialog", "@radix-ui/react-tooltip", "@radix-ui/react-tabs", "@radix-ui/react-select"],
+        },
+      },
+    },
   },
   server: {
     fs: {
