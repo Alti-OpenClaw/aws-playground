@@ -272,6 +272,26 @@ export default function Playground() {
       takeSnapshot(nodes, edges);
 
       const edgeId = `${pendingConnection.source}-${pendingConnection.target}`;
+
+      // Derive edge label from config answers (use connection_type, protocol, or first meaningful answer)
+      let edgeLabel = "";
+      const labelKeys = ["connection_type", "protocol", "access_type", "integration_type"];
+      for (const key of labelKeys) {
+        if (config[key] && typeof config[key] === "string") {
+          edgeLabel = config[key];
+          break;
+        }
+      }
+      // Fallback: use first non-internal answer
+      if (!edgeLabel) {
+        for (const [key, val] of Object.entries(config)) {
+          if (!key.startsWith("_") && typeof val === "string" && val.length < 30) {
+            edgeLabel = val;
+            break;
+          }
+        }
+      }
+
       const newEdge: Edge = {
         id: edgeId,
         source: pendingConnection.source!,
@@ -286,7 +306,11 @@ export default function Playground() {
           width: 16,
           height: 16,
         },
-        label: "",
+        label: edgeLabel,
+        labelStyle: { fontSize: 10, fontWeight: 500, fill: "hsl(var(--foreground))" },
+        labelBgStyle: { fill: "hsl(var(--card))", fillOpacity: 0.9 },
+        labelBgPadding: [6, 3] as [number, number],
+        labelBgBorderRadius: 4,
       };
 
       setEdges((eds) => addEdge(newEdge, eds));
