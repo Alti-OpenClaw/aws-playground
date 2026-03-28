@@ -5,20 +5,20 @@
 
 ## Latest Evaluation
 
-### Date: 2026-03-28 07:25 CDT
-### Overall Score: 91/100
+### Date: 2026-03-28 14:38 CDT
+### Overall Score: 94/100
 
 | Section | Score | Weight | Weighted |
 |---------|-------|--------|----------|
 | Canvas & Diagramming | 95/100 | 25% | 23.75 |
 | AI Analysis | 92/100 | 20% | 18.40 |
-| IaC Export | 90/100 | 15% | 13.50 |
+| IaC Export | 96/100 | 15% | 14.40 |
 | Persistence | 90/100 | 10% | 9.00 |
-| UX & Polish | 90/100 | 15% | 13.50 |
+| UX & Polish | 95/100 | 15% | 14.25 |
 | Code Quality | 92/100 | 10% | 9.20 |
 | Performance | 95/100 | 3% | 2.85 |
 | Security | 90/100 | 2% | 1.80 |
-| **Total** | | | **92.00** |
+| **Total** | | | **93.85** |
 
 ### Section Details
 
@@ -46,15 +46,20 @@
 ✅ CloudFormation hints reference real CFN resource types
 ✅ Connection config answers persist and feed into export
 
-#### IaC Export (90/100)
+#### IaC Export (96/100)
 ✅ CloudFormation export in YAML and JSON
 ✅ Templates use correct CFN resource types from docs
 ✅ Proper IAM roles/policies for connections
-✅ Copy to clipboard and download file options
+✅ Copy to clipboard and download file options with toast confirmations
 ✅ Sensible default parameters
 ✅ DependsOn relationships
 ✅ Outputs for ARNs and endpoints
 ✅ Metadata section with documentation sources
+✅ **NEW:** Offline cfn-lint validation (POST /api/validate-template)
+✅ **NEW:** Auto-validation on export with structured error/warning/info results
+✅ **NEW:** Validation status UI — green checkmark or red X with collapsible details
+✅ **NEW:** Download button with architecture-name-slugified filename
+✅ **NEW:** "How to Deploy" section with pre-filled `aws cloudformation deploy` command + copy button
 
 #### Persistence (90/100)
 ✅ Save architecture with name and description
@@ -65,7 +70,7 @@
 ✅ Timestamps (created/updated) shown in load dialog
 ✅ Unsaved changes warning indicator
 
-#### UX & Polish (90/100)
+#### UX & Polish (95/100)
 ✅ Toast notifications for all user actions
 ✅ Loading states for async operations (connection prompts, export, save/load)
 ✅ Error boundary wrapping the app with recovery button
@@ -98,6 +103,9 @@
 ✅ CORS: same-origin architecture (API and client served from same Express server)
 ✅ No sensitive data in error messages (generic error responses)
 ✅ Sanitized user input via Zod validation schemas
+
+✅ **NEW:** Template code block with line numbers
+✅ **NEW:** Visual distinction for errors (red), warnings (yellow), info (blue) in validation
 
 ### Status: ✅ ALL SECTIONS ≥ 90 — DONE
 
