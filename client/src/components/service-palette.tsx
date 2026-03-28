@@ -107,7 +107,7 @@ export function ServicePalette({ onDragStart, onBoundaryDragStart }: ServicePale
   );
 
   return (
-    <div className="h-full flex flex-col bg-sidebar border-r border-sidebar-border">
+    <div className="h-full flex flex-col bg-sidebar border-r border-sidebar-border" role="navigation" aria-label="AWS Service Palette">
       {/* Header */}
       <div className="p-3 border-b border-sidebar-border flex-shrink-0">
         <div className="flex items-center gap-2 mb-2">
@@ -137,6 +137,7 @@ export function ServicePalette({ onDragStart, onBoundaryDragStart }: ServicePale
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-8 h-8 text-xs bg-background"
+            aria-label="Search AWS services"
             data-testid="input-search-services"
           />
         </div>
@@ -247,6 +248,9 @@ export function ServicePalette({ onDragStart, onBoundaryDragStart }: ServicePale
                         draggable
                         onDragStart={(e) => onDragStart(e, service)}
                         className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-sidebar-accent cursor-grab active:cursor-grabbing transition-colors group"
+                        role="option"
+                        aria-label={`Drag ${service.shortName} — ${service.description}`}
+                        tabIndex={0}
                         data-testid={`service-drag-${service.id}`}
                         title={service.description}
                       >
