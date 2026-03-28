@@ -50,24 +50,29 @@ export function ExportDialog({
     setTemplate(null);
 
     try {
-      const serviceNodes = nodes.map((n) => ({
-        id: n.id,
-        service: (n.data as AwsNodeData).service.name,
-        serviceId: (n.data as AwsNodeData).service.id,
-        cfnType: (n.data as AwsNodeData).service.cfnType,
-        notes: (n.data as AwsNodeData).notes,
-      }));
+      const serviceNodes = nodes.map((n) => {
+        const d = n.data as unknown as AwsNodeData;
+        return {
+          id: n.id,
+          service: d.service.name,
+          serviceId: d.service.id,
+          cfnType: d.service.cfnType,
+          notes: d.notes,
+        };
+      });
 
-      const connections = edges.map((e) => ({
-        from: e.source,
-        to: e.target,
-        fromService: nodes.find((n) => n.id === e.source)?.data
-          ? ((nodes.find((n) => n.id === e.source)!.data as AwsNodeData).service.name)
-          : e.source,
-        toService: nodes.find((n) => n.id === e.target)?.data
-          ? ((nodes.find((n) => n.id === e.target)!.data as AwsNodeData).service.name)
-          : e.target,
-      }));
+      const connections = edges.map((e) => {
+        const sourceNode = nodes.find((n) => n.id === e.source);
+        const targetNode = nodes.find((n) => n.id === e.target);
+        const fromData = sourceNode ? (sourceNode.data as unknown as AwsNodeData) : null;
+        const toData = targetNode ? (targetNode.data as unknown as AwsNodeData) : null;
+        return {
+          from: e.source,
+          to: e.target,
+          fromService: fromData ? fromData.service.name : e.source,
+          toService: toData ? toData.service.name : e.target,
+        };
+      });
 
       const res = await apiRequest("POST", "/api/export-cloudformation", {
         nodes: serviceNodes,

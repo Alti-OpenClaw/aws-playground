@@ -6,6 +6,7 @@ export interface GroupNodeData {
   label: string;
   groupType: "region" | "vpc" | "subnet" | "availability-zone" | "security-group";
   onDelete?: (id: string) => void;
+  [key: string]: unknown;
 }
 
 const GROUP_STYLES: Record<string, { border: string; bg: string; label: string; icon: string }> = {

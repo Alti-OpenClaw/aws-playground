@@ -51,8 +51,8 @@ import { apiRequest } from "@/lib/queryClient";
 const nodeTypes = { awsService: AwsNode, group: GroupNode };
 
 export default function Playground() {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [connectionConfigs, setConnectionConfigs] = useState<
     Record<string, Record<string, any>>
   >({});
@@ -386,13 +386,13 @@ export default function Playground() {
   const sourceService = useMemo(() => {
     if (!pendingConnection?.source) return null;
     const node = nodes.find((n) => n.id === pendingConnection.source);
-    return node ? (node.data as AwsNodeData).service : null;
+    return node ? (node.data as unknown as AwsNodeData).service : null;
   }, [pendingConnection, nodes]);
 
   const targetService = useMemo(() => {
     if (!pendingConnection?.target) return null;
     const node = nodes.find((n) => n.id === pendingConnection.target);
-    return node ? (node.data as AwsNodeData).service : null;
+    return node ? (node.data as unknown as AwsNodeData).service : null;
   }, [pendingConnection, nodes]);
 
   // Get note info for note dialog
@@ -452,7 +452,7 @@ export default function Playground() {
           <Controls className="!shadow-md" showInteractive={false} />
           <MiniMap
             nodeColor={(node: Node) => {
-              const service = (node.data as AwsNodeData)?.service;
+              const service = (node.data as unknown as AwsNodeData)?.service;
               return service?.color || "#888";
             }}
             maskColor={isDark ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.7)"}
@@ -641,10 +641,10 @@ export default function Playground() {
         onOpenChange={setShowNoteDialog}
         nodeId={noteNodeId}
         serviceName={
-          noteNode ? (noteNode.data as AwsNodeData).service.shortName : ""
+          noteNode ? (noteNode.data as unknown as AwsNodeData).service.shortName : ""
         }
         currentNote={
-          noteNode ? ((noteNode.data as AwsNodeData).notes || "") : ""
+          noteNode ? ((noteNode.data as unknown as AwsNodeData).notes || "") : ""
         }
         onSave={handleSaveNote}
       />

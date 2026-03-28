@@ -10,6 +10,7 @@ export interface AwsNodeData {
   config?: Record<string, any>;
   onDelete?: (id: string) => void;
   onAddNote?: (id: string) => void;
+  [key: string]: unknown;
 }
 
 function AwsNodeComponent({ id, data, selected }: NodeProps & { data: AwsNodeData }) {
