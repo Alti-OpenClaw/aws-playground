@@ -82,7 +82,7 @@ export function ExportDialog({
       });
       const data = await res.json();
       setTemplate(data.template);
-    } catch (err: any) {
+    } catch {
       setError("Failed to generate template. Please try again.");
     } finally {
       setLoading(false);

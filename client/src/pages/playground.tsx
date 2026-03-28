@@ -31,8 +31,6 @@ import {
   Moon,
   Undo2,
   Redo2,
-  ZoomIn,
-  ZoomOut,
   Save,
   FolderOpen,
   Layout,
@@ -45,7 +43,7 @@ import { ConnectionDialog } from "@/components/connection-dialog";
 import { ExportDialog } from "@/components/export-dialog";
 import { NoteDialog } from "@/components/note-dialog";
 import { SaveLoadDialog } from "@/components/save-load-dialog";
-import { type AwsService, getServiceById } from "@/data/aws-services";
+import { type AwsService } from "@/data/aws-services";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useUndoRedo } from "@/hooks/use-undo-redo";
@@ -417,17 +415,17 @@ export default function Playground() {
 
   // Load architecture
   const handleLoad = useCallback(
-    (arch: any) => {
+    (arch: { id: number; name: string; nodesJson?: string | null; edgesJson?: string | null; connectionConfigsJson?: string | null }) => {
       try {
-        const loadedNodes = JSON.parse(arch.nodesJson || "[]");
-        const loadedEdges = JSON.parse(arch.edgesJson || "[]");
-        const loadedConfigs = arch.connectionConfigsJson
+        const loadedNodes: Node[] = JSON.parse(arch.nodesJson || "[]");
+        const loadedEdges: Edge[] = JSON.parse(arch.edgesJson || "[]");
+        const loadedConfigs: Record<string, Record<string, unknown>> = arch.connectionConfigsJson
           ? JSON.parse(arch.connectionConfigsJson)
           : {};
 
         // Update the node counter to avoid id collisions
         let maxCounter = 0;
-        loadedNodes.forEach((n: any) => {
+        loadedNodes.forEach((n) => {
           const parts = n.id.split("-");
           const num = parseInt(parts[parts.length - 1], 10);
           if (!isNaN(num) && num > maxCounter) maxCounter = num;
