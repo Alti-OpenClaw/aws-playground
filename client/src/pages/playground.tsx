@@ -176,6 +176,7 @@ export default function Playground() {
             nodes={state.nodes}
             edges={state.edges}
             connectionConfigs={state.connectionConfigs}
+            architectureName={state.currentArchName}
           />
         )}
         {state.showNoteDialog && (
