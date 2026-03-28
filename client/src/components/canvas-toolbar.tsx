@@ -25,6 +25,7 @@ interface CanvasToolbarProps {
   isDark: boolean;
   canUndo: boolean;
   canRedo: boolean;
+  hasUnsavedChanges: boolean;
   onToggleTheme: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -41,6 +42,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
   isDark,
   canUndo,
   canRedo,
+  hasUnsavedChanges,
   onToggleTheme,
   onUndo,
   onRedo,
@@ -73,6 +75,12 @@ export const CanvasToolbar = memo(function CanvasToolbar({
           {archName && (
             <Badge variant="outline" className="text-[10px] h-5 px-1.5 text-primary border-primary/30">
               {archName}
+              {hasUnsavedChanges && <span className="ml-1 text-amber-500">●</span>}
+            </Badge>
+          )}
+          {!archName && hasUnsavedChanges && (
+            <Badge variant="outline" className="text-[10px] h-5 px-1.5 text-amber-500 border-amber-400/30">
+              Unsaved
             </Badge>
           )}
           <Badge variant="secondary" className="text-[10px] h-5 px-1.5">

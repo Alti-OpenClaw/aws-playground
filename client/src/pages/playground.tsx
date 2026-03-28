@@ -54,6 +54,8 @@ export default function Playground() {
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [currentArchId, setCurrentArchId] = useState<number | null>(null);
   const [currentArchName, setCurrentArchName] = useState<string>("");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const lastSavedState = useRef<string>("");
 
   // Theme
   const [isDark, setIsDark] = useState(() =>
@@ -76,6 +78,14 @@ export default function Playground() {
   useState(() => {
     document.documentElement.classList.toggle("dark", isDark);
   });
+
+  // Track unsaved changes
+  useEffect(() => {
+    const currentState = JSON.stringify({ n: nodes.length, e: edges.length });
+    if (lastSavedState.current && currentState !== lastSavedState.current) {
+      setHasUnsavedChanges(true);
+    }
+  }, [nodes, edges]);
 
   // Undo/redo handlers
   const handleUndo = useCallback(() => {
@@ -393,6 +403,8 @@ export default function Playground() {
         setCurrentArchId(created.id);
       }
       setCurrentArchName(name);
+      setHasUnsavedChanges(false);
+      lastSavedState.current = JSON.stringify({ n: nodes.length, e: edges.length });
       toast({ title: "Architecture saved", description: `"${name}" saved successfully.` });
     },
     [nodes, edges, connectionConfigs, currentArchId, toast]
@@ -422,6 +434,8 @@ export default function Playground() {
         setConnectionConfigs(loadedConfigs);
         setCurrentArchId(arch.id);
         setCurrentArchName(arch.name);
+        setHasUnsavedChanges(false);
+        lastSavedState.current = JSON.stringify({ n: loadedNodes.length, e: loadedEdges.length });
         toast({ title: "Architecture loaded", description: `"${arch.name}" loaded successfully.` });
       } catch (err) {
         console.error("Failed to load architecture:", err);
@@ -526,6 +540,7 @@ export default function Playground() {
             isDark={isDark}
             canUndo={canUndo()}
             canRedo={canRedo()}
+            hasUnsavedChanges={hasUnsavedChanges}
             onToggleTheme={toggleTheme}
             onUndo={handleUndo}
             onRedo={handleRedo}
