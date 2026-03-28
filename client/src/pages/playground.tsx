@@ -39,7 +39,8 @@ import {
 } from "lucide-react";
 
 import { AwsNode, type AwsNodeData } from "@/components/aws-node";
-import { ServicePalette } from "@/components/service-palette";
+import { GroupNode, type GroupNodeData } from "@/components/group-node";
+import { ServicePalette, type BoundaryType } from "@/components/service-palette";
 import { ConnectionDialog } from "@/components/connection-dialog";
 import { ExportDialog } from "@/components/export-dialog";
 import { NoteDialog } from "@/components/note-dialog";
@@ -47,7 +48,7 @@ import { SaveLoadDialog } from "@/components/save-load-dialog";
 import { type AwsService, getServiceById } from "@/data/aws-services";
 import { apiRequest } from "@/lib/queryClient";
 
-const nodeTypes = { awsService: AwsNode };
+const nodeTypes = { awsService: AwsNode, group: GroupNode };
 
 export default function Playground() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -104,28 +105,89 @@ export default function Playground() {
     event.dataTransfer.dropEffect = "move";
   }, []);
 
+  // Find which group node (if any) contains a drop point
+  const findParentGroup = useCallback(
+    (dropX: number, dropY: number): Node | null => {
+      // Check group nodes from smallest to largest (most specific parent)
+      const groups = nodes
+        .filter((n) => n.type === "group")
+        .map((n) => ({
+          node: n,
+          area: (n.measured?.width || n.width || 400) * (n.measured?.height || n.height || 300),
+        }))
+        .sort((a, b) => a.area - b.area);
+
+      for (const { node } of groups) {
+        const nx = node.position.x;
+        const ny = node.position.y;
+        const nw = node.measured?.width || node.width || 400;
+        const nh = node.measured?.height || node.height || 300;
+
+        if (dropX >= nx && dropX <= nx + nw && dropY >= ny && dropY <= ny + nh) {
+          return node;
+        }
+      }
+      return null;
+    },
+    [nodes]
+  );
+
   const handleDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
-      const data = event.dataTransfer.getData("application/aws-service");
-      if (!data) return;
 
-      const service: AwsService = JSON.parse(data);
-
-      // Get canvas-relative position
       const reactFlowBounds = (
         event.currentTarget as HTMLElement
       ).getBoundingClientRect();
       const position = {
-        x: event.clientX - reactFlowBounds.left - 70,
-        y: event.clientY - reactFlowBounds.top - 30,
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
       };
 
+      // Check for boundary drop
+      const boundaryData = event.dataTransfer.getData("application/aws-boundary");
+      if (boundaryData) {
+        const boundary: BoundaryType = JSON.parse(boundaryData);
+        nodeCounter.current += 1;
+
+        // Find parent group for nesting
+        const parentGroup = findParentGroup(position.x, position.y);
+
+        const groupNode: Node = {
+          id: `${boundary.id}-${nodeCounter.current}`,
+          type: "group",
+          position: parentGroup
+            ? { x: position.x - parentGroup.position.x - 100, y: position.y - parentGroup.position.y - 75 }
+            : { x: position.x - 100, y: position.y - 75 },
+          style: { width: 400, height: 300 },
+          data: {
+            label: boundary.label,
+            groupType: boundary.groupType,
+            onDelete: handleDeleteNode,
+          } as GroupNodeData,
+          ...(parentGroup ? { parentId: parentGroup.id, extent: "parent" as const } : {}),
+        };
+
+        setNodes((nds) => [...nds, groupNode]);
+        return;
+      }
+
+      // Check for service drop
+      const serviceData = event.dataTransfer.getData("application/aws-service");
+      if (!serviceData) return;
+
+      const service: AwsService = JSON.parse(serviceData);
       nodeCounter.current += 1;
+
+      // Find parent group for auto-nesting
+      const parentGroup = findParentGroup(position.x, position.y);
+
       const newNode: Node = {
         id: `${service.id}-${nodeCounter.current}`,
         type: "awsService",
-        position,
+        position: parentGroup
+          ? { x: position.x - parentGroup.position.x - 70, y: position.y - parentGroup.position.y - 30 }
+          : { x: position.x - 70, y: position.y - 30 },
         data: {
           service,
           notes: "",
@@ -133,11 +195,12 @@ export default function Playground() {
           onDelete: handleDeleteNode,
           onAddNote: handleOpenNoteDialog,
         } satisfies AwsNodeData,
+        ...(parentGroup ? { parentId: parentGroup.id, extent: "parent" as const, expandParent: true } : {}),
       };
 
       setNodes((nds) => [...nds, newNode]);
     },
-    [setNodes]
+    [setNodes, findParentGroup]
   );
 
   // Handle connection attempt
@@ -192,12 +255,29 @@ export default function Playground() {
     setPendingConnection(null);
   }, []);
 
-  // Delete node
+  // Delete node (and children if it's a group)
   const handleDeleteNode = useCallback(
     (nodeId: string) => {
-      setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+      setNodes((nds) => {
+        // Collect all descendant IDs (recursive for nested groups)
+        const toDelete = new Set<string>([nodeId]);
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (const n of nds) {
+            if (n.parentId && toDelete.has(n.parentId) && !toDelete.has(n.id)) {
+              toDelete.add(n.id);
+              changed = true;
+            }
+          }
+        }
+        return nds.filter((n) => !toDelete.has(n.id));
+      });
       setEdges((eds) =>
-        eds.filter((e) => e.source !== nodeId && e.target !== nodeId)
+        eds.filter((e) => {
+          // Will be cleaned up since nodes are gone, but be explicit
+          return true;
+        })
       );
     },
     [setNodes, setEdges]
@@ -340,7 +420,7 @@ export default function Playground() {
             data: {
               ...n.data,
               onDelete: handleDeleteNode,
-              onAddNote: handleOpenNoteDialog,
+              ...(n.type !== "group" ? { onAddNote: handleOpenNoteDialog } : {}),
             },
           }))}
           edges={edges}

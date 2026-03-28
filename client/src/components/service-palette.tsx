@@ -45,11 +45,30 @@ const categoryIcons: Record<string, any> = {
   MoveRight,
 };
 
-interface ServicePaletteProps {
-  onDragStart: (event: React.DragEvent, service: AwsService) => void;
+export interface BoundaryType {
+  id: string;
+  label: string;
+  groupType: "region" | "vpc" | "subnet" | "availability-zone" | "security-group";
+  icon: string;
+  description: string;
+  color: string;
 }
 
-export function ServicePalette({ onDragStart }: ServicePaletteProps) {
+export const boundaryTypes: BoundaryType[] = [
+  { id: "region", label: "Region", groupType: "region", icon: "🌍", description: "AWS Region boundary", color: "#60a5fa" },
+  { id: "vpc", label: "VPC", groupType: "vpc", icon: "🔒", description: "Virtual Private Cloud", color: "#34d399" },
+  { id: "public-subnet", label: "Public Subnet", groupType: "subnet", icon: "🔗", description: "Public subnet (internet-facing)", color: "#fbbf24" },
+  { id: "private-subnet", label: "Private Subnet", groupType: "subnet", icon: "🔗", description: "Private subnet (internal only)", color: "#f59e0b" },
+  { id: "availability-zone", label: "Availability Zone", groupType: "availability-zone", icon: "🏢", description: "AZ boundary", color: "#a78bfa" },
+  { id: "security-group", label: "Security Group", groupType: "security-group", icon: "🛡️", description: "Security group boundary", color: "#f87171" },
+];
+
+interface ServicePaletteProps {
+  onDragStart: (event: React.DragEvent, service: AwsService) => void;
+  onBoundaryDragStart?: (event: React.DragEvent, boundary: BoundaryType) => void;
+}
+
+export function ServicePalette({ onDragStart, onBoundaryDragStart }: ServicePaletteProps) {
   const [search, setSearch] = useState("");
   const [openCategories, setOpenCategories] = useState<Set<string>>(
     new Set(["Compute", "Storage", "Database", "Networking"])
@@ -126,6 +145,67 @@ export function ServicePalette({ onDragStart }: ServicePaletteProps) {
       {/* Service Categories */}
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-0.5">
+          {/* Boundaries Section */}
+          {!search.trim() && (
+            <Collapsible
+              open={openCategories.has("Boundaries")}
+              onOpenChange={() => toggleCategory("Boundaries")}
+            >
+              <CollapsibleTrigger
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-sidebar-accent transition-colors text-left"
+                data-testid="category-boundaries"
+              >
+                <ChevronRight
+                  className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${
+                    openCategories.has("Boundaries") ? "rotate-90" : ""
+                  }`}
+                />
+                <Box className="w-3.5 h-3.5 flex-shrink-0 text-emerald-500" />
+                <span className="text-xs font-medium text-sidebar-foreground flex-1">
+                  Boundaries
+                </span>
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] h-4 px-1.5 min-w-0"
+                >
+                  {boundaryTypes.length}
+                </Badge>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="ml-3 pl-3 border-l border-sidebar-border space-y-0.5 py-1">
+                  {boundaryTypes.map((boundary) => (
+                    <div
+                      key={boundary.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData(
+                          "application/aws-boundary",
+                          JSON.stringify(boundary)
+                        );
+                        e.dataTransfer.effectAllowed = "move";
+                        onBoundaryDragStart?.(e, boundary);
+                      }}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-sidebar-accent cursor-grab active:cursor-grabbing transition-colors group"
+                      data-testid={`boundary-drag-${boundary.id}`}
+                      title={boundary.description}
+                    >
+                      <GripVertical className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                      <span className="text-base flex-shrink-0">{boundary.icon}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-medium text-sidebar-foreground leading-tight truncate">
+                          {boundary.label}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground leading-tight truncate">
+                          {boundary.description}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
           {filteredCategories.map((category) => {
             const IconComp = categoryIcons[category.icon] || Box;
             const isOpen = openCategories.has(category.name) || !!search.trim();
