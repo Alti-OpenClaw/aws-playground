@@ -43,7 +43,9 @@ import { ServicePalette } from "@/components/service-palette";
 import { ConnectionDialog } from "@/components/connection-dialog";
 import { ExportDialog } from "@/components/export-dialog";
 import { NoteDialog } from "@/components/note-dialog";
+import { SaveLoadDialog } from "@/components/save-load-dialog";
 import { type AwsService, getServiceById } from "@/data/aws-services";
+import { apiRequest } from "@/lib/queryClient";
 
 const nodeTypes = { awsService: AwsNode };
 
@@ -60,6 +62,10 @@ export default function Playground() {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [noteNodeId, setNoteNodeId] = useState<string | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showLoadDialog, setShowLoadDialog] = useState(false);
+  const [currentArchId, setCurrentArchId] = useState<number | null>(null);
+  const [currentArchName, setCurrentArchName] = useState<string>("");
 
   // Theme
   const [isDark, setIsDark] = useState(() =>
@@ -223,11 +229,77 @@ export default function Playground() {
     [setNodes]
   );
 
+  // Save architecture
+  const handleSave = useCallback(
+    async (name: string, description: string) => {
+      const nodesJson = JSON.stringify(nodes);
+      const edgesJson = JSON.stringify(edges);
+      const connectionConfigsJson = JSON.stringify(connectionConfigs);
+      const now = new Date().toISOString();
+
+      const body = {
+        name,
+        description: description || null,
+        nodesJson,
+        edgesJson,
+        notesJson: null,
+        connectionConfigsJson,
+        updatedAt: now,
+        createdAt: now,
+      };
+
+      if (currentArchId) {
+        // Update existing
+        await apiRequest("PUT", `/api/architectures/${currentArchId}`, body);
+      } else {
+        // Create new
+        const res = await apiRequest("POST", "/api/architectures", body);
+        const created = await res.json();
+        setCurrentArchId(created.id);
+      }
+      setCurrentArchName(name);
+    },
+    [nodes, edges, connectionConfigs, currentArchId]
+  );
+
+  // Load architecture
+  const handleLoad = useCallback(
+    (arch: any) => {
+      try {
+        const loadedNodes = JSON.parse(arch.nodesJson || "[]");
+        const loadedEdges = JSON.parse(arch.edgesJson || "[]");
+        const loadedConfigs = arch.connectionConfigsJson
+          ? JSON.parse(arch.connectionConfigsJson)
+          : {};
+
+        // Update the node counter to avoid id collisions
+        let maxCounter = 0;
+        loadedNodes.forEach((n: any) => {
+          const parts = n.id.split("-");
+          const num = parseInt(parts[parts.length - 1], 10);
+          if (!isNaN(num) && num > maxCounter) maxCounter = num;
+        });
+        nodeCounter.current = maxCounter;
+
+        setNodes(loadedNodes);
+        setEdges(loadedEdges);
+        setConnectionConfigs(loadedConfigs);
+        setCurrentArchId(arch.id);
+        setCurrentArchName(arch.name);
+      } catch (err) {
+        console.error("Failed to load architecture:", err);
+      }
+    },
+    [setNodes, setEdges]
+  );
+
   // Clear canvas
   const handleClear = useCallback(() => {
     setNodes([]);
     setEdges([]);
     setConnectionConfigs({});
+    setCurrentArchId(null);
+    setCurrentArchName("");
   }, [setNodes, setEdges]);
 
   // Get source and target services for connection dialog
@@ -328,6 +400,11 @@ export default function Playground() {
 
               {/* Stats */}
               <div className="flex items-center gap-1.5 mr-2 pr-2 border-r border-border">
+                {currentArchName && (
+                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 text-primary border-primary/30">
+                    {currentArchName}
+                  </Badge>
+                )}
                 <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
                   {nodes.length} services
                 </Badge>
@@ -370,6 +447,39 @@ export default function Playground() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Clear canvas</TooltipContent>
+              </Tooltip>
+
+              <div className="w-px h-5 bg-border mx-0.5" />
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowSaveDialog(true)}
+                    disabled={nodes.length === 0}
+                    className="h-7 w-7 p-0"
+                    data-testid="btn-save"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Save architecture</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowLoadDialog(true)}
+                    className="h-7 w-7 p-0"
+                    data-testid="btn-load"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Load architecture</TooltipContent>
               </Tooltip>
 
               <div className="w-px h-5 bg-border mx-0.5" />
@@ -457,6 +567,25 @@ export default function Playground() {
           noteNode ? ((noteNode.data as AwsNodeData).notes || "") : ""
         }
         onSave={handleSaveNote}
+      />
+
+      {/* Save Dialog */}
+      <SaveLoadDialog
+        open={showSaveDialog}
+        onOpenChange={setShowSaveDialog}
+        mode="save"
+        currentName={currentArchName}
+        onSave={handleSave}
+        onLoad={handleLoad}
+      />
+
+      {/* Load Dialog */}
+      <SaveLoadDialog
+        open={showLoadDialog}
+        onOpenChange={setShowLoadDialog}
+        mode="load"
+        onSave={handleSave}
+        onLoad={handleLoad}
       />
     </div>
   );
