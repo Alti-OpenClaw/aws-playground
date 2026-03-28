@@ -5,8 +5,90 @@ import { Anthropic } from "@anthropic-ai/sdk";
 import { getConnectionDocumentation, getExportDocumentation } from "./aws-docs";
 import { insertArchitectureSchema } from "../shared/schema";
 import { z } from "zod";
+import { writeFile, unlink } from "fs/promises";
+import { join } from "path";
+import { tmpdir } from "os";
+import { randomUUID } from "crypto";
+import { execFile } from "child_process";
 
 const anthropic = new Anthropic();
+
+// cfn-lint binary path — installed via pip3
+const CFN_LINT_PATH = process.env.CFN_LINT_PATH || "/Users/altinemoclaw-dev/Library/Python/3.9/bin/cfn-lint";
+
+interface CfnLintError {
+  rule: string;
+  message: string;
+  location: string;
+  level: "error" | "warning" | "informational";
+}
+
+async function validateTemplate(
+  template: string,
+  format: "yaml" | "json"
+): Promise<{ valid: boolean; errors: CfnLintError[] }> {
+  const ext = format === "yaml" ? ".yaml" : ".json";
+  const tmpFile = join(tmpdir(), `cfn-${randomUUID()}${ext}`);
+
+  try {
+    await writeFile(tmpFile, template, "utf-8");
+
+    return await new Promise((resolve) => {
+      execFile(
+        CFN_LINT_PATH,
+        [tmpFile, "-f", "json", "--include-checks", "I"],
+        { timeout: 30000 },
+        (err, stdout, _stderr) => {
+          if (!err) {
+            // Exit code 0 = no issues
+            resolve({ valid: true, errors: [] });
+            return;
+          }
+
+          // cfn-lint exits non-zero when it finds issues
+          try {
+            const results = JSON.parse(stdout || "[]") as Array<{
+              Rule: { Id: string };
+              Message: string;
+              Location: { Path: string[] };
+              Level: string;
+            }>;
+
+            const errors: CfnLintError[] = results.map((r) => ({
+              rule: r.Rule?.Id || "unknown",
+              message: r.Message || "Unknown error",
+              location: Array.isArray(r.Location?.Path)
+                ? r.Location.Path.join("/")
+                : "template",
+              level: (r.Level?.toLowerCase() || "error") as CfnLintError["level"],
+            }));
+
+            resolve({
+              valid: errors.filter((e) => e.level === "error").length === 0,
+              errors,
+            });
+          } catch {
+            // If we can't parse cfn-lint output, report a generic error
+            resolve({
+              valid: false,
+              errors: [
+                {
+                  rule: "E0000",
+                  message: err.message || "cfn-lint failed to run",
+                  location: "template",
+                  level: "error",
+                },
+              ],
+            });
+          }
+        }
+      );
+    });
+  } finally {
+    // Clean up temp file
+    unlink(tmpFile).catch(() => {});
+  }
+}
 
 // Input validation schemas for API endpoints
 const connectionPromptSchema = z.object({
@@ -134,6 +216,25 @@ Respond ONLY with valid JSON, no markdown code blocks or extra text.`
     }
   });
 
+  // Standalone template validation endpoint
+  app.post("/api/validate-template", async (req, res) => {
+    try {
+      const schema = z.object({
+        template: z.string().min(1).max(500000),
+        format: z.enum(["yaml", "json"]),
+      });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request body", details: parsed.error.issues.map((i) => i.message) });
+      }
+      const result = await validateTemplate(parsed.data.template, parsed.data.format);
+      res.json(result);
+    } catch (error) {
+      console.error("Validation error:", error);
+      res.status(500).json({ error: "Failed to validate template" });
+    }
+  });
+
   // CloudFormation export — grounded in AWS documentation
   app.post("/api/export-cloudformation", async (req, res) => {
     try {
@@ -202,7 +303,15 @@ Respond ONLY with the raw ${format === 'yaml' ? 'YAML' : 'JSON'} template conten
 
       const content = message.content[0];
       if (content.type === "text") {
-        res.json({ template: content.text, format, sources: docs.sources });
+        // Auto-validate the generated template
+        let validation = { valid: true, errors: [] as CfnLintError[] };
+        try {
+          validation = await validateTemplate(content.text, format);
+        } catch (validationError) {
+          console.error("Auto-validation failed:", validationError);
+          // Don't block export if validation itself errors out
+        }
+        res.json({ template: content.text, format, sources: docs.sources, validation });
       }
     } catch (error) {
       console.error("Export error:", error);
